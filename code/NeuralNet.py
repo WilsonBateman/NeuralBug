@@ -16,14 +16,13 @@ class NeuralNet:
         self.inputs = []
         self.outputs = []
         self.net = [[Neuron() for x in range(max_row_size)] for y in range(max_columns)]
-        self.age = 0
 
     #Each row will propogate sequentially, allowing synchronicity of inhibitors
     def cascade(self):
         for row in self.net:
             for neuron in row: 
                 neuron.propogate()
-        self.age += 1
+        print(self.net)
 
     def get_input(self): #Need to accept a strategy here long-term
         return add_neuron(self.inputs)

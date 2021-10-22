@@ -15,8 +15,9 @@ def bug_input(event):
         sys.exit()
     elif event.key == "r":
         move_func = bug.chase_light
-    elif event.key == "l":
+    elif event.key == "a":
         move_func = bug.learn_move
+        bug.give_taste(image.get_pixel)
     elif event.key in ("up", "down", "left", "right"):
         move_func = bug.move_directed
         run_bug(event)

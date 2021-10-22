@@ -4,6 +4,7 @@ import operator
 import NeuralNet as nn
 
 food_max = 255
+nn_on = false
 
 class Bug:
 
@@ -13,7 +14,7 @@ class Bug:
         self.bound_y = bound_y
         self.nn = nn.NeuralNet()
         self.sight_neurons = {key: self.nn.get_input() for key in cd.coords.keys()} 
-        self.movement_neruons = {key: self.nn.get_output() for key in cd.coords.keys()}
+        self.movement_neurons = {key: self.nn.get_output() for key in cd.coords.keys()}
         self.nn.connectIO()
 
     def get_location(self):
@@ -26,6 +27,9 @@ class Bug:
 
     def give_sight(self, sight_func):
         self.look = sight_func
+
+    def give_taste(self, taste_func):
+        self.eat = taste_func
 
     def move(self, direction):
         new_x = self.position[0] + direction[0]
@@ -60,7 +64,14 @@ class Bug:
             self.move(cd.coords[choice(result)[0]]) #choose randomly from equal values
 
     def learn_move(self, event = None):
-        pixel_vals = {key: self.look_direction(cd.coords[key]) for key in cd.coords.keys()}
         for k, v in self.sight_neurons.items():
-            v.activate(pixel_vals[k])
+            v.activate(self.look_direction(cd.coords[k]))
         self.nn.cascade()
+        max_weight = 0
+        dir = (0, 0)
+
+        for k, v in self.movement_neurons.items():
+            if v.act_potential > max_weight:
+                max_weight = v.act_potential
+                dir = k
+        self.move(dir) # move in the direction of the most action potential
