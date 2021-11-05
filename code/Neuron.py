@@ -7,6 +7,7 @@ from Dendrite import Dendrite
 class Neuron:
 
     act_potential = 0.0
+    connections = {}
       
     #Add and give activation/inhibition weights
     def add_connections(self, connections = {}):
@@ -14,12 +15,11 @@ class Neuron:
         #self.connections = {neuron: Dendrite(neuron, -.5) for neuron in connections}    #inhbitions
 
     def activate(self, weight): #Activate or inhibit
-        self.act_potential += weight
+        self.act_potential = weight
 
     def propogate(self):
         for connection in self.connections:
             connection.activate(self.act_potential)
-        self.act_potential = 0
 
     def reward(self, reward_ratio):
          for d in self.connections:

@@ -24,6 +24,8 @@ class NeuralNet:
         for row in self.net:
             for neuron in row:
                 neuron.propogate()
+        for neuron in self.outputs:
+            neuron.propogate()
 
     def get_input(self): #Need to accept a strategy here long-term
         return add_neuron(self.inputs)

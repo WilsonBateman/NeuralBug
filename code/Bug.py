@@ -81,6 +81,8 @@ class Bug(pygame.sprite.Sprite):
     def learn_move(self, event = None):
         for k, v in self.light_vals.items():
             self.sight_neurons[k].activate(v)
+            if (v > 0):
+                print("See light " + k)
         self.nn.cascade()
         max_weight = 0
         dir = None
@@ -93,5 +95,5 @@ class Bug(pygame.sprite.Sprite):
         if dir == None:
             return choice(list(direction.map.values()))
         else:
-            print(dir + ": ", max_weight)
+            #print(dir + ": ", max_weight)
             return direction.map[dir] # move in the direction of the most action potential

@@ -5,10 +5,12 @@ import sys
 from Bug import Bug, MoveType
 import math
 import Directions as directions
+import random
 
 FOOD_MAX = 255
 SWARM_SIZE = 20 #best if even
-MAP_SIZE = (640, 400)
+MAP_SIZE = (200, 200)
+NUM_LIGHTS = 5000
 
 class App:
     def __init__(self):
@@ -22,12 +24,17 @@ class App:
         pygame.init()
         self._display_surf = pygame.display.set_mode(self.size)
         self._display_surf.fill((0,0,0))
+        self.spawn_random_lights(NUM_LIGHTS)
         self._running = True
+
+    def spawn_random_lights(self, num):
+        for x in range(num):
+            self.lightSprites.add(LightSprite((math.floor(MAP_SIZE[0] * random.random()), math.floor(MAP_SIZE[1] * random.random())), 255))
 
     def add_lights(self, pos):
         max_dist = math.sqrt((SWARM_SIZE//2)**2 + (SWARM_SIZE//2)**2)
         for x_dist in range(SWARM_SIZE+1):
-            x_coord = pos[0] + x_dist - (SWARM_SIZE//2)
+            x_coord = (pos[0] + x_dist - (SWARM_SIZE//2))
             for y_dist in range(SWARM_SIZE+1):
                 y_coord = pos[1] + y_dist - (SWARM_SIZE//2)
                 if(x_coord > 0 and y_coord > 0 and x_coord < MAP_SIZE[0] and y_coord < MAP_SIZE[1]):

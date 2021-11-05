@@ -17,10 +17,11 @@ class Dendrite:
             self.fired = True
 
     def reward(self, reward_ratio):
-        if (self.fired):
-            self.weight += ((1 - self.weight) * reward_ratio)
-        elif (self.weight > .1):
-            self.weight -= .1
+        if (self.fired and reward_ratio > 0): #Just to save the calcs
+            print("REWARD!")
+            self.weight += .05 #Most are going to be misses, so this needs to weight more heavily
+        elif (self.weight > .05):
+            self.weight -= .0001
 
         self.strength = 0.0
         self.fired = False
