@@ -1,11 +1,8 @@
 from random import choice
 import pygame
-import Coordinates as cd
-import operator
+import Directions as direction
 import NeuralNet as nn
 from enum import Enum
-
-FOODMAX = 255
 
 class MoveType(Enum):
     USER = 0
@@ -14,16 +11,17 @@ class MoveType(Enum):
 
 class Bug(pygame.sprite.Sprite):
 
-    def __init__(self, x, y) -> None:
+    def __init__(self, x, y, map_size) -> None:
         super().__init__()
+        self.map_size = map_size
         self.position = pygame.Vector2(x, y)
         self.surf = pygame.Surface((1,1))
         self.surf.fill((255,255,255))
         self.rect = self.surf.get_rect(center = self.position)
         self.nn = nn.NeuralNet()
         self.move_strategy = self.move_directed
-        self.sight_neurons = {key: self.nn.get_input() for key in cd.coords.keys()} 
-        self.movement_neurons = {key: self.nn.get_output() for key in cd.coords.keys()}
+        self.sight_neurons = {key: self.nn.get_input() for key in direction.map.keys()} 
+        self.movement_neurons = {key: self.nn.get_output() for key in direction.map.keys()}
         self.nn.connectIO()
         self.move_type = self.chase_light
         self.light_vals = {}
@@ -31,7 +29,7 @@ class Bug(pygame.sprite.Sprite):
     def set_move_strat(self, type):
         if type == MoveType.USER:
             self.move_strategy = self.move_directed
-        elif type == MoveType:
+        elif type == MoveType.NN:
             self.move_strategy = self.learn_move
         else:
             self.move_strategy = self.chase_light
@@ -41,33 +39,33 @@ class Bug(pygame.sprite.Sprite):
 
     #Basic functions
     def eat(self, food_val):
-        print("Food: {}".format(food_val))
-        self.nn.reward(food_val/FOODMAX)
+        self.nn.reward(food_val)
 
-    def move(self, event = None): #Need to constrain to map
+    def move(self, event = None):
         dir = self.move_strategy(event)
+        if (dir == direction.NONE):
+            return False
+        new_x = self.position.x + dir[0]
+        new_y = self.position.y + dir[1]
+        if(new_x < 0 or new_x > self.map_size[0] or new_y < 0 or new_y > self.map_size[1]):
+            dir = direction.NONE
         self.position += dir
         self.rect.center = self.position
-
-    def look_direction(self, d):
-        try:
-            return self.look(tuple(map(operator.add, self.position, d)))
-        except:
-            print("Eyes not set correctly or looking out of bounds.")
+        return True
 
     #Movement strategies
     def move_directed(self, event = None):
         if event != None:
             if event.key == pygame.K_UP:
-                return cd.coords["up"]
+                return direction.UP
             elif event.key == pygame.K_DOWN:
-                return cd.coords["down"]
+                return direction.DOWN
             elif event.key == pygame.K_LEFT:
-                return cd.coords["left"]
+                return direction.LEFT
             elif event.key == pygame.K_RIGHT:
-                return cd.coords["right"]
+                return direction.RIGHT
         else:
-            return pygame.Vector2(0,0)
+            return direction.NONE
 
     def chase_light(self, event = None):
         max_key = max(self.light_vals, key=self.light_vals.get)
@@ -76,19 +74,24 @@ class Bug(pygame.sprite.Sprite):
         #Right now this can get stuck on the borders, since the lights are
         #drawn outside the boundaries of the graph
         if (len(result) == 1):
-            return cd.coords[max_key]
+            return direction.map[max_key]
         else:
-            return cd.coords[choice(result)[0]] #choose randomly from equal values
+            return direction.map[choice(result)[0]] #choose randomly from equal values
 
     def learn_move(self, event = None):
-        for k, v in self.sight_neurons.items():
-            v.activate(self.look_direction(cd.coords[k]))
+        for k, v in self.light_vals.items():
+            self.sight_neurons[k].activate(v)
         self.nn.cascade()
         max_weight = 0
-        dir = pygame.Vector2(0, 0)
+        dir = None
 
+        #TODO Thematically, this should be "listening" to the motor neurons
         for k, v in self.movement_neurons.items():
             if v.act_potential > max_weight:
                 max_weight = v.act_potential
                 dir = k
-        return dir # move in the direction of the most action potential
+        if dir == None:
+            return choice(list(direction.map.values()))
+        else:
+            print(dir + ": ", max_weight)
+            return direction.map[dir] # move in the direction of the most action potential

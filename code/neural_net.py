@@ -4,16 +4,18 @@ from pygame.locals import *
 import sys
 from Bug import Bug, MoveType
 import math
-import Coordinates as cd
+import Directions as directions
 
+FOOD_MAX = 255
 SWARM_SIZE = 20 #best if even
+MAP_SIZE = (640, 400)
 
 class App:
     def __init__(self):
         self._running = True
         self._display_surf = None
-        self.size = self.weight, self.height = 640, 400
-        self.bug = Bug(5,5)
+        self.size = self.weight, self.height = MAP_SIZE
+        self.bug = Bug(5, 5, MAP_SIZE)
         self.lightSprites  = pygame.sprite.Group()
  
     def on_init(self):
@@ -28,9 +30,10 @@ class App:
             x_coord = pos[0] + x_dist - (SWARM_SIZE//2)
             for y_dist in range(SWARM_SIZE+1):
                 y_coord = pos[1] + y_dist - (SWARM_SIZE//2)
-                dist_from_center = math.dist((x_coord, y_coord),pos)
-                alpha = int((1-(dist_from_center/max_dist)) * 255)
-                self.lightSprites.add(LightSprite((x_coord, y_coord),alpha))
+                if(x_coord > 0 and y_coord > 0 and x_coord < MAP_SIZE[0] and y_coord < MAP_SIZE[1]):
+                    dist_from_center = math.dist((x_coord, y_coord),pos)
+                    alpha = int((1-(dist_from_center/max_dist)) * 255)
+                    self.lightSprites.add(LightSprite((x_coord, y_coord),alpha))
  
     def on_event(self, event):
         if event.type == pygame.QUIT:
@@ -57,11 +60,15 @@ class App:
         return 0
 
     def on_loop(self):
-        self.bug.move()
-        caughtLights = pygame.sprite.spritecollide(self.bug, self.lightSprites, True)
-        for light in caughtLights:
-            self.bug.eat(light.surf.get_at((0,0)).r)
-        self.bug.light_vals = {key: self.getLight(cd.coords[key]) for key in cd.coords.keys()}
+        tried_move = self.bug.move()
+        if (tried_move):
+            caughtLights = pygame.sprite.spritecollide(self.bug, self.lightSprites, True)
+            if len(caughtLights) > 0:
+                self.bug.eat(caughtLights[0].surf.get_at((0,0)).r/FOOD_MAX)
+            else:
+                self.bug.eat(0)
+        #Find all the nearby light values.
+        self.bug.light_vals = {key: self.getLight(directions.map[key])/FOOD_MAX for key in directions.map.keys()}
 
     def on_render(self):
         self._display_surf.fill((0,0,0))

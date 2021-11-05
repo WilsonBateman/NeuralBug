@@ -19,10 +19,11 @@ class NeuralNet:
 
     #Each row will propogate sequentially, allowing synchronicity of inhibitors
     def cascade(self):
+        for neuron in self.inputs:
+            neuron.propogate()
         for row in self.net:
-            for neuron in row: 
+            for neuron in row:
                 neuron.propogate()
-        print(self.net)
 
     def get_input(self): #Need to accept a strategy here long-term
         return add_neuron(self.inputs)
@@ -38,7 +39,7 @@ class NeuralNet:
         for n in self.net[len(self.net)-1] : n.add_connections(self.outputs)
 
     def reward(self, reward_ratio):
-        #Use feedback or propogate some sort of confirmation through all cells?
+        #Propogate some sort of confirmation through all cells to simulate hormone wash.
         for n in self.net:
             for m in n:
                 m.reward(reward_ratio)
