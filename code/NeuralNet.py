@@ -42,6 +42,8 @@ class NeuralNet:
 
     def reward(self, reward_ratio):
         #Propogate some sort of confirmation through all cells to simulate hormone wash.
+        for n in self.inputs:
+            n.reward(reward_ratio)
         for n in self.net:
             for m in n:
                 m.reward(reward_ratio)

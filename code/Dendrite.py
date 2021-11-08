@@ -7,21 +7,21 @@ class Dendrite:
     def __init__(self, neuron, weight: float) -> None:
         self.neuron = neuron #Downstream neuron
         self.weight = weight
-        self.strength = 0.0
         self.fired = False
 
     def activate(self, action_potential):
-        self.strength = action_potential * self.weight #Get the chance to fire.
-        if (random() < self.strength):
-            self.neuron.activate(self.strength)
+        if (random() < self.weight):
+            self.neuron.activate(action_potential) #Or strength?
             self.fired = True
 
     def reward(self, reward_ratio):
-        if (self.fired and reward_ratio > 0): #Just to save the calcs
-            print("REWARD!")
-            self.weight += .05 #Most are going to be misses, so this needs to weight more heavily
-        elif (self.weight > .05):
-            self.weight -= .0001
+        if (self.fired):
+            if (reward_ratio > 0 and self.weight < .9): #Just to save the calcs
+                #print("REWARD!")
+                self.weight += .1 #Most are going to be misses, so this needs to weight more heavily
+            elif (reward_ratio == 0 and self.weight > .01): #Failure hits hard
+                self.weight -= .001
+        # elif (self.weight > .01):
+        #     self.weight -= .001
 
-        self.strength = 0.0
         self.fired = False

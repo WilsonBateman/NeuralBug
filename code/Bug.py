@@ -47,7 +47,7 @@ class Bug(pygame.sprite.Sprite):
             return False
         new_x = self.position.x + dir[0]
         new_y = self.position.y + dir[1]
-        if(new_x < 0 or new_x > self.map_size[0] or new_y < 0 or new_y > self.map_size[1]):
+        if(new_x <= 0 or new_x >= self.map_size[0] or new_y <= 0 or new_y >= self.map_size[1]):
             dir = direction.NONE
         self.position += dir
         self.rect.center = self.position
@@ -81,8 +81,8 @@ class Bug(pygame.sprite.Sprite):
     def learn_move(self, event = None):
         for k, v in self.light_vals.items():
             self.sight_neurons[k].activate(v)
-            if (v > 0):
-                print("See light " + k)
+            # if (v > 0):
+            #     print("See light " + k)
         self.nn.cascade()
         max_weight = 0
         dir = None
