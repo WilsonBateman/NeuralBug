@@ -1,16 +1,18 @@
 import pygame
-from pygame import display
 from pygame.locals import *
 import sys
 from Bug import Bug, MoveType
 import math
 import Directions as directions
 import random
+from InputBox import InputBox
+import numpy
 
 FOOD_MAX = 255
 SWARM_SIZE = 20 #best if even
-MAP_SIZE = (200, 200)
-NUM_LIGHTS = 2000
+MAP_SIZE = (600, 400)
+HUD_HEIGHT = 100
+LIGHTS_DELAY = 10
 
 class App:
     def __init__(self):
@@ -19,18 +21,25 @@ class App:
         self.size = self.weight, self.height = MAP_SIZE
         self.bug = Bug(100, 100, MAP_SIZE)
         self.lightSprites  = pygame.sprite.Group()
-        self.hud_surf = pygame.Surface((MAP_SIZE[0], 100))
+        self.timer = 0
  
     def on_init(self):
         pygame.init()
-        self._display_surf = pygame.display.set_mode((self.size[0], self.size[1]+100))
+        self.hud_surf = pygame.Surface((MAP_SIZE[0], HUD_HEIGHT))
+        self.text_surf = pygame.Surface((MAP_SIZE[0]//2, HUD_HEIGHT))
+        self.input_boxes = [InputBox(10, 10, 100, 20),
+                    InputBox(10, 40, 100, 20),
+                    InputBox(10, 70, 100, 20)]
+        self._display_surf = pygame.display.set_mode((MAP_SIZE[0], MAP_SIZE[1]+HUD_HEIGHT))
         self._display_surf.fill((0,0,0))
-        self.spawn_random_lights(NUM_LIGHTS)
         self._running = True
 
     def spawn_random_lights(self, num):
         for x in range(num):
             self.lightSprites.add(LightSprite((math.floor(MAP_SIZE[0] * random.random()), math.floor(MAP_SIZE[1] * random.random())), 255))
+
+    def spawn_nearby_light(self, pos):
+        self.lightSprites.add(LightSprite((pos[0] - random.randint(-20, 20), pos[1] - random.randint(-20, 20)), 255))
 
     def add_lights(self, pos):
         max_dist = math.sqrt((SWARM_SIZE//2)**2 + (SWARM_SIZE//2)**2)
@@ -57,6 +66,14 @@ class App:
             elif event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT):
                 self.bug.set_move_strat(MoveType.USER)
                 self.bug.move(event)
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            rel_pos = tuple(numpy.subtract(event.pos, (MAP_SIZE[0]//2, MAP_SIZE[1])))
+            for box in self.input_boxes:
+                box.set_active(rel_pos)
+        elif event.type == pygame.KEYDOWN:
+            for box in self.input_boxes:
+                box.handle_event(event)
         
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.add_lights(event.pos)
@@ -77,6 +94,11 @@ class App:
                 self.draw_reward()
             else:
                 self.bug.eat(0)
+        if self.timer == LIGHTS_DELAY:
+            self.timer = 0
+            self.spawn_nearby_light(self.bug.get_location())
+        else:
+            self.timer += 1
         #Find all the nearby light values.
         self.bug.light_vals = {key: self.getLight(directions.map[key])/FOOD_MAX for key in directions.map.keys()}
 
@@ -119,6 +141,11 @@ class App:
         self._display_surf.blit(self.bug.surf , self.bug.rect)
         for entity in self.lightSprites:
             self._display_surf.blit(entity.surf, entity.rect)
+        self.text_surf.fill((128,128,128))
+        for box in self.input_boxes:
+            box.update()
+            box.draw(self.text_surf)
+        self.hud_surf.blit(self.text_surf, (MAP_SIZE[0]//2, 0))
         self._display_surf.blit(self.hud_surf, (0, MAP_SIZE[1]))
         pygame.display.update()
 

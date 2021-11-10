@@ -1,7 +1,5 @@
 from random import random
 
-fall_off = .05 #Want something that would take a few rounds to fade away
-
 class Dendrite:
 
     def __init__(self, neuron, weight: float) -> None:
@@ -16,12 +14,12 @@ class Dendrite:
 
     def reward(self, reward_ratio):
         if (self.fired):
-            if (reward_ratio > 0 and self.weight < .9): #Just to save the calcs
+            if (reward_ratio > 0 and self.weight < .99): #Just to save the calcs
                 #print("REWARD!")
-                self.weight += .1 #Most are going to be misses, so this needs to weight more heavily
+                self.weight += .01 #Most are going to be misses, so this needs to weight more heavily
             elif (reward_ratio == 0 and self.weight > .01): #Failure hits hard
-                self.weight -= .001
+                self.weight -= .0003
         # elif (self.weight > .01):
-        #     self.weight -= .001
+        #     self.weight -= .000001
 
         self.fired = False

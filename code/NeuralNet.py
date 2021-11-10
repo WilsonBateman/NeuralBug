@@ -3,7 +3,7 @@ from Neuron import Neuron
 
 gen_len = 50
 max_row_size = 4
-max_columns = 2
+max_columns = 1
 
 def add_neuron(n_type):
     neuron = Neuron()
