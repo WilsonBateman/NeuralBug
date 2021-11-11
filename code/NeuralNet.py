@@ -3,7 +3,7 @@ from Neuron import Neuron
 
 gen_len = 50
 max_row_size = 4
-max_columns = 1
+max_columns = 2
 
 def add_neuron(n_type):
     neuron = Neuron()
@@ -16,6 +16,15 @@ class NeuralNet:
         self.inputs = []
         self.outputs = []
         self.net = [[Neuron() for x in range(max_row_size)] for y in range(max_columns)]
+
+    def reinitialize(self):
+        for neuron in self.inputs:
+            neuron.reinitialize()
+        for row in self.net:
+            for neuron in row:
+                neuron.reinitialize()
+        for neuron in self.outputs:
+            neuron.reinitialize()
 
     #Each row will propogate sequentially, allowing synchronicity of inhibitors
     def cascade(self):

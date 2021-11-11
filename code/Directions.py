@@ -10,5 +10,5 @@ map = {
     "up" : UP,
     "down" : DOWN,
     "left" : LEFT,
-    "right" : RIGHT
+    "right" : RIGHT,
 }

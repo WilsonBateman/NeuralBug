@@ -1,4 +1,7 @@
+from numpy import False_
+from pygame.constants import ACTIVEEVENT
 from Dendrite import Dendrite
+import math
 
 #First the neuron will determine whether to fire (given input and depletion)
 #That will give its action potential. From there, it will determine which 
@@ -6,16 +9,23 @@ from Dendrite import Dendrite
 #Reward will be weighted depending on level of depletion.
 class Neuron:
 
-    act_potential = 0.0
-    connections = {}
+    def __init__(self):
+        self.act_potential = 0.0
+        self.connections = {}
       
-    #Add and give activation/inhibition weights
+    #Add and give activation weights
     def add_connections(self, connections = {}):
-        self.connections = {Dendrite(neuron, .5) for neuron in connections}     #activations
-        #self.connections = {neuron: Dendrite(neuron, -.5) for neuron in connections}    #inhbitions
+        self.connections = {Dendrite(neuron, .1) for neuron in connections}
 
-    def activate(self, weight): #Activate or inhibit
-        self.act_potential = weight
+    def reinitialize(self):
+        self.act_potential = 0
+        for connection in self.connections:
+            connection.reinitialize()
+
+    def activate(self, new_act):
+        self.act_potential += new_act
+        if (self.act_potential > 1):
+            self.act_potential = 1
 
     def propogate(self):
         for connection in self.connections:

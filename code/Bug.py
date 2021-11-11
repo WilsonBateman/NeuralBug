@@ -42,30 +42,28 @@ class Bug(pygame.sprite.Sprite):
         self.nn.reward(food_val)
 
     def move(self, event = None):
-        dir = self.move_strategy(event)
-        if (dir == direction.NONE):
-            return False
+        dir, is_learn_move = self.move_strategy(event)
         new_x = self.position.x + dir[0]
         new_y = self.position.y + dir[1]
         if(new_x <= 0 or new_x >= self.map_size[0] or new_y <= 0 or new_y >= self.map_size[1]):
             dir = direction.NONE
         self.position += dir
         self.rect.center = self.position
-        return True
+        return is_learn_move
 
     #Movement strategies
     def move_directed(self, event = None):
         if event != None:
             if event.key == pygame.K_UP:
-                return direction.UP
+                return direction.UP, False
             elif event.key == pygame.K_DOWN:
-                return direction.DOWN
+                return direction.DOWN, False
             elif event.key == pygame.K_LEFT:
-                return direction.LEFT
+                return direction.LEFT, False
             elif event.key == pygame.K_RIGHT:
-                return direction.RIGHT
+                return direction.RIGHT, False
         else:
-            return direction.NONE
+            return direction.NONE, False
 
     def chase_light(self, event = None):
         max_key = max(self.light_vals, key=self.light_vals.get)
@@ -74,15 +72,16 @@ class Bug(pygame.sprite.Sprite):
         #Right now this can get stuck on the borders, since the lights are
         #drawn outside the boundaries of the graph
         if (len(result) == 1):
-            return direction.map[max_key]
+            return direction.map[max_key], False
         else:
-            return direction.map[choice(result)[0]] #choose randomly from equal values
+            return direction.map[choice(result)[0]], False #choose randomly from equal values
 
     def learn_move(self, event = None):
+        sees_light = False
         for k, v in self.light_vals.items():
             self.sight_neurons[k].activate(v)
-            # if (v > 0):
-            #     print("See light " + k)
+            if v > 0:
+                sees_light = True
         self.nn.cascade()
         max_weight = 0
         dir = None
@@ -92,8 +91,7 @@ class Bug(pygame.sprite.Sprite):
             if v.act_potential > max_weight:
                 max_weight = v.act_potential
                 dir = k
-        if dir == None:
-            return choice(list(direction.map.values()))
+        if sees_light:
+            return direction.map[dir] if not dir == None else direction.NONE, True # If it sees the light, only move on purpose.
         else:
-            #print(dir + ": ", max_weight)
-            return direction.map[dir] # move in the direction of the most action potential
+            return choice(list(direction.map.values())), False

@@ -7,12 +7,49 @@ import Directions as directions
 import random
 from InputBox import InputBox
 import numpy
+import globals
 
 FOOD_MAX = 255
 SWARM_SIZE = 20 #best if even
 MAP_SIZE = (600, 400)
 HUD_HEIGHT = 100
 LIGHTS_DELAY = 10
+NUM_LIGHTS = 500
+
+#Blue to red from 0 to 1
+def get_color_map(value):
+    return (255 * value, 0, 255 * (1-value))
+
+def draw_neurons(surface, nn, is_reward):
+    col_center = 10
+    conn_starts = {}
+    conn_starts = print_column_at(surface, nn.inputs, col_center, conn_starts, is_reward)
+    col_center += 30
+    for row in nn.net:
+        conn_starts = print_column_at(surface, row, col_center, conn_starts, is_reward)
+        col_center += 30
+    conn_starts = print_column_at(surface, nn.outputs, col_center, conn_starts, is_reward)
+
+
+def print_column_at(surface, col, col_center, conns, is_reward):
+    new_conns = {}
+    next_box = 0
+    for n in col:
+        next_box +=  20
+        if not is_reward:
+            #Draw neuron squares
+            pygame.draw.rect(surface, get_color_map(n.act_potential), (col_center, next_box, 10, 10))
+        #Draw connection lines
+        for (start, neuron), (weight, fired) in conns.items():
+            if (n == neuron):
+                if (is_reward):
+                    if(fired):
+                        pygame.draw.line(surface, (255,255,0,255), (start[0]+5,start[1]+5), (col_center+5, next_box+5))
+                else:
+                    pygame.draw.line(surface, get_color_map(weight), (start[0]+5,start[1]+5), (col_center+5, next_box+5), 2)
+        #Get the latest neuron's connections
+        new_conns.update({((col_center, next_box),d.neuron): (d.weight, d.fired) for d in n.connections})
+    return new_conns
 
 class App:
     def __init__(self):
@@ -27,12 +64,13 @@ class App:
         pygame.init()
         self.hud_surf = pygame.Surface((MAP_SIZE[0], HUD_HEIGHT))
         self.text_surf = pygame.Surface((MAP_SIZE[0]//2, HUD_HEIGHT))
-        self.input_boxes = [InputBox(10, 10, 100, 20),
-                    InputBox(10, 40, 100, 20),
-                    InputBox(10, 70, 100, 20)]
+        self.reward_overlay = pygame.Surface((MAP_SIZE[0]//2, HUD_HEIGHT), pygame.SRCALPHA)
+        self.input_boxes = [InputBox(10, 10, 100, 20, globals.get_reward, globals.set_reward),
+                    InputBox(10, 40, 100, 20, globals.get_punishment, globals.set_punishment),
+                    InputBox(10, 70, 100, 20, globals.get_falloff, globals.set_falloff)]
         self._display_surf = pygame.display.set_mode((MAP_SIZE[0], MAP_SIZE[1]+HUD_HEIGHT))
-        self._display_surf.fill((0,0,0))
         self._running = True
+        self.spawn_random_lights(NUM_LIGHTS)
 
     def spawn_random_lights(self, num):
         for x in range(num):
@@ -85,13 +123,16 @@ class App:
         return 0
 
     def on_loop(self):
+        self.bug.nn.reinitialize()
         tried_move = self.bug.move()
-        self.draw_weights()
+        self.hud_surf.fill((255,255,255))
+        draw_neurons(self.hud_surf, self.bug.nn, False)
         if (tried_move):
             caughtLights = pygame.sprite.spritecollide(self.bug, self.lightSprites, True)
             if len(caughtLights) > 0:
+                self.reward_overlay.fill((0,0,0,0))
+                draw_neurons(self.reward_overlay, self.bug.nn, True)
                 self.bug.eat(caughtLights[0].surf.get_at((0,0)).r/FOOD_MAX)
-                self.draw_reward()
             else:
                 self.bug.eat(0)
         if self.timer == LIGHTS_DELAY:
@@ -101,40 +142,6 @@ class App:
             self.timer += 1
         #Find all the nearby light values.
         self.bug.light_vals = {key: self.getLight(directions.map[key])/FOOD_MAX for key in directions.map.keys()}
-
-    def draw_weights(self):
-        self.hud_surf.fill((255,255,255))
-        col_center = 10
-        conn_starts = {}
-        conn_starts = self.print_column_at(self.bug.nn.inputs, col_center, conn_starts)
-        col_center += 30
-        for row in self.bug.nn.net:
-            conn_starts = self.print_column_at(row, col_center, conn_starts)
-            col_center += 30
-        conn_starts = self.print_column_at(self.bug.nn.outputs, col_center, conn_starts)
-
-
-    def print_column_at(self, col, col_center, conns):
-        new_conns = {}
-        next_box = 0
-        for n in col:
-            next_box +=  20
-            #Draw neuron squares
-            pygame.draw.rect(self.hud_surf, self.get_color_map(n.act_potential), (col_center, next_box, 10, 10))
-            #Draw connection lines
-            for (start, neuron), weight in conns.items():
-                if (n == neuron):
-                    pygame.draw.line(self.hud_surf, self.get_color_map(weight), (start[0]+5,start[1]+5), (col_center+5, next_box+5))
-            #Get the latest neuron's connections
-            new_conns.update({((col_center, next_box),d.neuron): d.weight for d in n.connections})
-        return new_conns
-
-    #Blue to red from 0 to 1
-    def get_color_map(self, value):
-        return (255 * value, 0, 255 * (1-value))
-
-    def draw_reward(self):
-        pass
 
     def on_render(self):
         self._display_surf.fill((0,0,0))
@@ -146,6 +153,8 @@ class App:
             box.update()
             box.draw(self.text_surf)
         self.hud_surf.blit(self.text_surf, (MAP_SIZE[0]//2, 0))
+        self.reward_overlay.convert_alpha()
+        self.hud_surf.blit(self.reward_overlay, (0,0))
         self._display_surf.blit(self.hud_surf, (0, MAP_SIZE[1]))
         pygame.display.update()
 
